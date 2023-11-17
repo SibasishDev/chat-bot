@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css"
+    />
+    <link rel="stylesheet" href="../style.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.min.css">
+    <title>Chatbot - Brave Coder</title>
+  </head>
+
+  <body>
+    <div class="wrapper">
+      <div class="title">Chatbot</div>
+      <div class="box">
+        <div class="chatbox">
+
+        </div>
+      </div>
+
+      <div class="typing-area">
+        <div class="input-field">
+          <input
+            type="text"
+            id="ChatInput"
+            placeholder="Type your message"
+            required
+          />
+          <button id="sendBtn">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <script
+      src="https://code.jquery.com/jquery-3.7.1.min.js"
+      integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+      crossorigin="anonymous"
+    ></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>     
+    <script>
+      $(document).ready(function () {
+        const socket = io();
+        let skip = 0;
+        let isLoading = false;
+        let hasMore = true;
+        //toaster
+
+    const swal = Swal.mixin({
+    toast: true,
+    icon: 'success',
+    title: 'General Title',
+    animation: false,
+    position: 'top-right',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer)
+      toast.addEventListener('mouseleave', Swal.resumeTimer)
+    }
+  });
+  // ttoaster end
+        $(".box").scrollTop($(".box").innerHeight());
+        socket.emit("connection", "hello from user");
+        const typing = `<div class="item" id="typing">
+          <div class="icon">
+            <i class="fa fa-user"></i>
+          </div>
+          <div class="msg">
+            <p class="typing"></p>
+          </div>
+        </div>`;
+        $(document.body).on("click", "#sendBtn", function () {
+          const message = $("#ChatInput").val();
+          if (!message) return false;
+          const userId = "1";
+          appendMessage(message,convertTime(new Date()), 2);
+          $(".chatbox").append(typing);
+          socket.emit("chat message", { userId, message });
+          $("#ChatInput").val("");
+          $(".box").animate(
+            { scrollTop: $(".box").prop("scrollHeight") },
+            1000
+          );
+        });
+
+        $("#ChatInput").keyup(function (event) {
+          if (event.keyCode === 13) {
+            $("#sendBtn").click();
+          }
+        });
+
+        socket.on("assistant reply", (data) => {
+          console.log(data);
+          appendAssistantMessage(data.message.join("<br>"),convertTime(data.timestamp), 2);
+          $("#typing").remove();
+          $(".box").animate(
+            { scrollTop: $(".box").prop("scrollHeight") },
+            1000
+          );
+        });
+
+        socket.on("load message", (data) => {
+          isLoading = false;
+          hasMore = data.hasMore;
+          prependMessage(data.messages);
+        });
+
+        socket.on("error", (message) => {
+          swal.fire({
+            animate : true,
+            title: message,
+            icon: 'error'
+          })
+        });
+        let currentScroll;
+        $(".box").on("scroll", function () {
+          if ($(this).scrollTop() == 0 && !isLoading && hasMore) {
+            isLoading = true;
+            currentScroll = $(".box").innerHeight();
+            console.log(currentScroll);
+            socket.emit("get message", ++skip);
+          }
+        });
+
+        function prependMessage(messages) {
+          console.log(messages[0].message);
+          messages.map((elem) =>
+            elem.role == "assistant"
+              ? appendAssistantMessage(elem.message.join("<br>"),convertTime(elem.timestamp), 1)
+              : appendMessage(elem.message.join("<br>"),convertTime(elem.timestamp),1)
+          );
+          $(".box").scrollTop(currentScroll);
+          console.log(currentScroll);
+        }
+
+        function appendMessage(message,timestamp,type) {
+          const messageDiv = `<div class="item right">
+              <div class="msg">
+                  <p>${message}</p>
+                  <div class="timestamp-user">
+            <p>${timestamp}</p>
+            </div>
+              </div>
+          </div>`;
+          type == 1
+            ? $(".chatbox").prepend(messageDiv)
+            : $(".chatbox").append(messageDiv);
+        }
+      });
+
+      function appendAssistantMessage(message,timestamp,type) {
+        const messageDiv = `<div class="item">
+          <div class="icon">
+            <i class="fa fa-user"></i>
+          </div>
+          <div class="msg">
+            <p>${message}</p>
+            <div class="timestamp">
+            <p class="assistant-timestamp">${timestamp}</p>
+            </div>
+          </div>
+        </div>`;
+        type == 1
+          ? $(".chatbox").prepend(messageDiv)
+          : $(".chatbox").append(messageDiv);
+      }
+
+    function convertTime(timestamp){
+      const currentTime = new Date();
+      const messageTime = new Date(timestamp);
+      const year = messageTime.getFullYear();
+      const month = (messageTime.getMonth() + 1).toString().padStart(2, '0');
+      const day = messageTime.getDate().toString().padStart(2, '0');
+      const todayDate = `${year}-${month}-${day}`;
+      const currentDate = currentTime.toISOString().split("T")[0];
+      if (todayDate == currentDate) {
+        const hours = messageTime.getHours() % 12 || 12;
+        const minutes = messageTime.getMinutes().toString().padStart(2, '0');
+        const amPm = messageTime.getHours() >= 12 ? 'PM' : 'AM';
+        const formattedTime = `${hours}:${minutes} ${amPm}`;
+       return formattedTime;
+      } else {
+        const options = { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric',minute: 'numeric'};
+        const formattedDate = messageTime.toLocaleDateString('en-US', options);
+        return formattedDate;
+      }
+      }
+
+    </script>
+  </body>
+</html>
