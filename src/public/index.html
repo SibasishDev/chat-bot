@@ -1,238 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css"
-    />
-    <link rel="stylesheet" href="../style.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.min.css"
-    />
-    <title>Chatbot</title>
-  </head>
 
-  <body>
-    <div class="wrapper">
-      <div class="title">Chatbot</div>
-      <div class="box">
-        <div class="chatbox">
-          <div class="item">
-            <div class="icon">
-              <i class="fa fa-user"></i>
-            </div>
-            <div class="msg">
-              <p>Hi! How can I assist you today ?</p>
-              <div class="timestamp">
-                <p class="assistant-timestamp"></p>
-              </div>
-            </div>
-          </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Latest compiled and minified CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">  <title>Robot Chatbot</title>
+</head>
+<style>
+    body{
+  font-family: 'Open Sans', sans-serif;
+  background:#595be9;
+  margin: 0 auto 0 auto;  
+  width:100%; 
+  text-align:center;
+  margin: 20px 0px 20px 0px;   
+}
+
+p{
+  font-size:12px;
+  text-decoration: none;
+  color:#ffffff;
+}
+
+h1{
+  font-size:1.5em;
+  color:#525252;
+}
+
+.box{
+  background:white;
+  width:300px;
+  border-radius:6px;
+  margin: 0 auto 0 auto;
+  padding:0px 0px 40px 0px;
+  border: #2980b9 4px solid; 
+}
+
+
+.btn{
+  background: #2ecc71;
+    width: 125px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    color: white;
+    border-radius: 4px;
+    border: #27ae60 1px solid;
+    margin-top: 20px;
+    font-weight: 800;
+    font-size: 0.8em;
+}
+
+#login:hover{ 
+background:#3594D2; 
+}
+</style>
+
+<body>
+    <form method="post" action="index.html">
+        <div class="box">
+        <h1>Welcome to Home</h1>
+        <a href="/chat-bot"><div id="login" class="btn">Start Chat</div></a> 
+                  
         </div>
-      </div>
+          
+        </form>
+          
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js" type="text/javascript"></script>
+    
 
-      <div class="typing-area">
-        <div class="input-field">
-          <input
-            type="text"
-            id="ChatInput"
-            placeholder="Type your message"
-            required
-          />
-          <button id="sendBtn">Send</button>
-        </div>
-      </div>
-    </div>
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+</body>
 
-    <script
-      src="https://code.jquery.com/jquery-3.7.1.min.js"
-      integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
-      crossorigin="anonymous"
-    ></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>
-    <script>
-      $(document).ready(function () {
-        const host = "http://localhost:8000/"
-        const socket = io(host);
-        let skip = 0;
-        let isLoading = false;
-        let hasMore = true;
-        $(".assistant-timestamp").text(hourMinute(Date()));
-
-        //toaster
-
-        const swal = Swal.mixin({
-          toast: true,
-          icon: "success",
-          title: "General Title",
-          animation: false,
-          position: "top-right",
-          showConfirmButton: false,
-          timer: 3000,
-          timerProgressBar: true,
-          didOpen: (toast) => {
-            toast.addEventListener("mouseenter", Swal.stopTimer);
-            toast.addEventListener("mouseleave", Swal.resumeTimer);
-          },
-        });
-        // ttoaster end
-        $(".box").scrollTop($(".box").innerHeight());
-        socket.emit("connection", "hello from user");
-        const typing = `<div class="item" id="typing">
-          <div class="icon">
-            <i class="fa fa-user"></i>
-          </div>
-          <div class="msg">
-            <p class="typing"></p>
-          </div>
-        </div>`;
-        $(document.body).on("click", "#sendBtn", function () {
-          const message = $("#ChatInput").val();
-          if (!message) return false;
-          const userId = "1";
-          appendMessage(message, convertTime(new Date()), 2);
-          $(".chatbox").append(typing);
-          socket.emit("chat message", { userId, message });
-          $("#ChatInput").val("");
-          $(".box").animate(
-            { scrollTop: $(".box").prop("scrollHeight") },
-            1000
-          );
-        });
-
-        $("#ChatInput").keyup(function (event) {
-          if (event.keyCode === 13) {
-            $("#sendBtn").click();
-          }
-        });
-
-        socket.on("assistant reply", (data) => {
-          console.log(data);
-          appendAssistantMessage(
-            data.message.join("<br>"),
-            convertTime(data.timestamp),
-            2
-          );
-          $("#typing").remove();
-          $(".box").animate(
-            { scrollTop: $(".box").prop("scrollHeight") },
-            1000
-          );
-        });
-
-        socket.on("load message", (data) => {
-          isLoading = false;
-          hasMore = data.hasMore;
-          prependMessage(data.messages);
-        });
-
-        socket.on("error", (message) => {
-          swal.fire({
-            animate: true,
-            title: message,
-            icon: "error",
-          });
-        });
-        let currentScroll;
-        $(".box").on("scroll", function () {
-          if ($(this).scrollTop() == 0 && !isLoading && hasMore) {
-            isLoading = true;
-            currentScroll = $(".box").innerHeight();
-            console.log(currentScroll);
-            socket.emit("get message", ++skip);
-          }
-        });
-
-        function prependMessage(messages) {
-          console.log(messages[0].message);
-          messages.map((elem) =>
-            elem.role == "assistant"
-              ? appendAssistantMessage(
-                  elem.message.join("<br>"),
-                  convertTime(elem.timestamp),
-                  1
-                )
-              : appendMessage(
-                  elem.message.join("<br>"),
-                  convertTime(elem.timestamp),
-                  1
-                )
-          );
-          $(".box").scrollTop(currentScroll);
-          console.log(currentScroll);
-        }
-
-        function appendMessage(message, timestamp, type) {
-          const messageDiv = `<div class="item right">
-              <div class="msg">
-                  <p>${message}</p>
-                  <div class="timestamp-user">
-            <p>${timestamp}</p>
-            </div>
-              </div>
-          </div>`;
-          type == 1
-            ? $(".chatbox").prepend(messageDiv)
-            : $(".chatbox").append(messageDiv);
-        }
-      });
-
-      function appendAssistantMessage(message, timestamp, type) {
-        const messageDiv = `<div class="item">
-          <div class="icon">
-            <i class="fa fa-user"></i>
-          </div>
-          <div class="msg">
-            <p>${message}</p>
-            <div class="timestamp">
-            <p class="assistant-timestamp">${timestamp}</p>
-            </div>
-          </div>
-        </div>`;
-        type == 1
-          ? $(".chatbox").prepend(messageDiv)
-          : $(".chatbox").append(messageDiv);
-      }
-
-      function convertTime(timestamp) {
-        const currentTime = new Date();
-        const messageTime = new Date(timestamp);
-        const year = messageTime.getFullYear();
-        const month = (messageTime.getMonth() + 1).toString().padStart(2, "0");
-        const day = messageTime.getDate().toString().padStart(2, "0");
-        const todayDate = `${year}-${month}-${day}`;
-        const currentDate = currentTime.toISOString().split("T")[0];
-        if (todayDate == currentDate) {
-          return hourMinute(messageTime);
-        } else {
-          const options = {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-          };
-          const formattedDate = messageTime.toLocaleDateString(
-            "en-US",
-            options
-          );
-          return formattedDate;
-        }
-      }
-
-      function hourMinute(date) {
-        const messageTime = new Date(date);
-        const hours = messageTime.getHours() % 12 || 12;
-        const minutes = messageTime.getMinutes().toString().padStart(2, "0");
-        const amPm = messageTime.getHours() >= 12 ? "PM" : "AM";
-        const formattedTime = `${hours}:${minutes} ${amPm}`;
-        return formattedTime;
-      }
-    </script>
-  </body>
 </html>

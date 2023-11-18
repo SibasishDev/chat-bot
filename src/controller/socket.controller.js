@@ -2,16 +2,7 @@ const { Server } = require("socket.io");
 const Chat = require("../modal/message.modal");
 const AIController = require("./ai.controller");
 module.exports = function (io) {
-//   const io = new Server(server, {
-//     cors: {
-//       origins: ["*"],
-//     },
-//   });
-
   io.on("connection", (socket) => {
-    socket.on("connection", (msg) => {
-      console.log(msg);
-    });
     socket.on("chat message", async (msg) => {
       try {
         const { message } = msg;

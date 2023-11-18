@@ -7,13 +7,9 @@ class MongoDB {
 
     async connect(){
         try{
-            await mongoose.connect(config.MONGO_DB_URL,
-                {
-                    // useNewUrlParser: true,
-                    // useUnifiedTopology: true,
-                });
+            await mongoose.connect(config.MONGO_DB_URL);
 
-                console.log("Mongodb connected");
+                console.log("MongoDB  connected");
 
         }catch(e){
             console.log("Error in mongodb connection" + e);
