@@ -4,16 +4,14 @@ const AIController = require("../controller/ai.controller");
 module.exports = function (server) {
   const io = new Server(server, {
     cors: {
-      origins: ["*"],
+      origins: ["http://localhost:8000"],
     },
   });
 
   io.on("connection", (socket) => {
     console.log("Socket is connected");
-    // socket.emit("assistant reply", {message : ["Hi! How can I assist you today ?"], timestamp : new Date()});
     socket.on("connection", (msg) => {
       console.log(msg);
-      return;
     });
     socket.on("chat message", async (msg) => {
       try {
