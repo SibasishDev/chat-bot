@@ -3,6 +3,8 @@ const express = require("express");
 
 const app = express();
 
+const http = require("http");
+
 const cors = require('cors');
 
 const morgan = require('morgan');
@@ -11,9 +13,18 @@ const path = require("path");
 
 const config = require("./config/config");
 
-const PORT = config.PORT || 8088;
-
 const MongoDB = require("./config/mongodb.connection");
+const SocketController = require("./controller/socket.controller");
+
+const socketIo = require("socket.io");
+
+const server = http.createServer(app);
+
+const io = socketIo(server, {
+    cors: {
+      origin: "*",
+    },
+  });
 
 app.use(cors());
 
@@ -33,12 +44,8 @@ app.use(express.static(__dirname + '/public/'));
 
 // app.use(express.static(path.resolve(path.dirname(__dirname), "build","index.html")));
 
-MongoDB.connect();
 
-const server = app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
-
-require("./services/socket.init")(server);
-
+ SocketController(io);
 
 app.use("*",(req, res, next) => {
    return res.status(404).json({
@@ -58,3 +65,17 @@ app.use((err, req, res, next) => {
         }
     });
 });
+
+const start = async () => {
+    try {
+
+      await  MongoDB.connect();
+
+       server.listen(config.PORT, () => console.log(`Server listening on ${config.PORT}`));
+
+    } catch (error) {
+      console.error("Failed to connect to the database:", error);
+      process.exit(1);
+    }
+  };
+  start();
